@@ -6,10 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Chatbot</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', sans-serif;
             margin: 0;
-            background: #f0f2f5;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -19,45 +24,41 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
         #messages {
             flex: 1;
-            padding: 20px;
             overflow-y: auto;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
         .message {
-            padding: 12px 16px;
-            border-radius: 20px;
+            padding: 14px 18px;
+            border-radius: 16px;
             max-width: 80%;
-            line-height: 1.4;
+            line-height: 1.5;
             white-space: pre-wrap;
+            word-wrap: break-word;
             opacity: 0;
             transform: translateY(10px);
-            animation: fadeInUp 0.4s ease-out forwards;
+            animation: fadeInUp 0.3s ease-out forwards;
         }
 
         .user {
             align-self: flex-end;
-            background: #2563eb;
-            color: white;
+            background: #1f6feb;
+            color: #fff;
             border-bottom-right-radius: 4px;
         }
 
         .bot {
             align-self: flex-start;
-            background: #f1f3f6;
-            color: #333;
+            background: #2c2c2c;
+            color: #e0e0e0;
             border-bottom-left-radius: 4px;
         }
 
@@ -70,39 +71,57 @@
 
         #input-area {
             display: flex;
-            border-top: 1px solid #eee;
-            padding: 12px;
-            background: #fafafa;
+            align-items: center;
+            padding: 16px;
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+            gap: 12px;
         }
 
         #user-input {
             flex: 1;
-            padding: 10px 16px;
-            border: 1px solid #ccc;
+            padding: 12px 18px;
+            background: #2a2a2a;
+            border: none;
             border-radius: 25px;
+            color: #fff;
             font-size: 16px;
             outline: none;
-            transition: border 0.2s ease;
-        }
-
-        #user-input:focus {
-            border-color: #2563eb;
         }
 
         #send-btn {
-            margin-left: 10px;
-            background: #2563eb;
-            color: white;
+            padding: 10px 18px;
+            background: #1f6feb;
             border: none;
-            padding: 0 18px;
-            font-size: 16px;
             border-radius: 25px;
+            color: white;
+            font-size: 15px;
             cursor: pointer;
             transition: background 0.3s;
         }
 
         #send-btn:hover {
-            background: #1e40af;
+            background: #155ed1;
+        }
+
+        #file-upload {
+            color: #ccc;
+            background: #2a2a2a;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+
+        #file-upload::file-selector-button {
+            padding: 8px 12px;
+            background: #333;
+            color: #ccc;
+            border: none;
+            border-radius: 20px;
+            margin-right: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -113,6 +132,7 @@
         <div id="messages"></div>
         <form id="input-area">
             <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" />
+            <input type="file" id="file-upload" accept=".pdf,.txt,.doc,.docx" />
             <button type="submit" id="send-btn">Send</button>
         </form>
     </div>
@@ -121,6 +141,7 @@
         const messages = document.getElementById('messages');
         const form = document.getElementById('input-area');
         const input = document.getElementById('user-input');
+        const fileInput = document.getElementById('file-upload');
 
         function appendMessage(text, role) {
             const div = document.createElement('div');
@@ -132,26 +153,33 @@
 
         async function sendMessage(e) {
             e.preventDefault();
+
             const text = input.value.trim();
-            if (!text) return;
+            const file = fileInput.files[0];
 
-            appendMessage(text, 'user');
+            if (!text && !file) return;
+
+            if (text) appendMessage(text, 'user');
             input.value = '';
+            fileInput.value = '';
 
-            appendMessage('...', 'bot'); // Temporary typing indicator
+            appendMessage('...', 'bot');
             const tempBot = messages.lastChild;
 
+            const formData = new FormData();
+            if (text) formData.append('message', text);
+            if (file) formData.append('file', file);
+
             try {
-                const res = await fetch("/api/ask", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: text })
+                const res = await fetch('/api/ask', {
+                    method: 'POST',
+                    body: formData,
                 });
 
                 const data = await res.json();
-                tempBot.textContent = data.reply;
+                tempBot.textContent = data.reply || '✅ File received.';
             } catch (err) {
-                tempBot.textContent = "⚠️ Something went wrong!";
+                tempBot.textContent = '⚠️ Something went wrong.';
             }
 
             messages.scrollTop = messages.scrollHeight;
@@ -159,9 +187,9 @@
 
         form.addEventListener('submit', sendMessage);
 
-        // Initial bot greeting
+        // Initial greeting
         window.onload = () => {
-            appendMessage("Hi! I’m your assistant. How can I help you today?", "bot");
+            appendMessage("Hi 👋 I'm your AI assistant. How can I help you today?", "bot");
         };
     </script>
 </body>
