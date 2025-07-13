@@ -88,7 +88,7 @@
             appendMessage(userText, "user");
             input.value = "";
 
-            const res = await fetch("/api/ask", {
+            const res = await fetch("https://chatbot-u9qw.onrender.com/api/ask", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
